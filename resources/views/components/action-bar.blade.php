@@ -9,16 +9,13 @@
 
         @if(auth()->user()?->isAdmin() ?? false)
             <div class="flex items-center gap-1">
-                <x-button variant="ghost" size="s" icon="share" @click="$store.modals.share = true">
-                    {{ __('stoman.common.share') }}
-                </x-button>
                 <x-button variant="ghost" size="s" icon="archive"
                     @click="window.stomanApi.archive(selected).then(() => { $store.ui.toast('success', 'Archived'); setTimeout(() => window.location.reload(), 300); })">
                     {{ __('stoman.common.archive') }}
                 </x-button>
                 <x-button variant="danger" size="s" icon="trash" data-delete-selected
-                    @click="window.stomanApi.destroy(selected).then(() => { $store.ui.toast('success', 'Moved to trash'); setTimeout(() => window.location.reload(), 300); })">
-                    {{ __('stoman.common.trash') }}
+                    @click="if(confirm('Hapus ' + selected.length + ' item?')) window.stomanApi.destroy(selected).then(() => { $store.ui.toast('success', 'Dihapus'); setTimeout(() => window.location.reload(), 300); })">
+                    {{ __('stoman.common.delete') }}
                 </x-button>
             </div>
         @endif

@@ -75,7 +75,11 @@
                             <x-file-card
                                 :id="data_get($item, 'id')"
                                 :name="data_get($item, 'name', '')"
-                                :meta="data_get($item, 'modified_label', '')" />
+                                :meta="data_get($item, 'modified_label', '')"
+                                :mime-type="data_get($item, 'mime_type', '')"
+                                :size="data_get($item, 'size_label', '')"
+                                :url="data_get($item, 'url', '#')"
+                                :download-url="data_get($item, 'download_url', '#')" />
                         @endif
                     @empty
                     @endforelse

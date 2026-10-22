@@ -62,6 +62,7 @@
     <x-upload-modal />
     <x-folder-modal />
     <x-share-modal />
+    <x-preview-modal />
     <x-toast />
 
     @stack('scripts')

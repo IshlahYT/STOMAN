@@ -1,18 +1,22 @@
 @php
     $currentUser = auth('web')->user() ?? auth('api')->user() ?? \App\Models\User::first();
+    $isAdmin = $currentUser && $currentUser->isAdmin();
 
-    $nav = [
-        ['label' => __('stoman.nav.home'), 'route' => 'home', 'icon' => 'home'],
-        ['label' => __('stoman.nav.storage'), 'route' => 'storage.index', 'icon' => 'folder'],
-        ['label' => __('stoman.nav.shared'), 'route' => 'shared.index', 'icon' => 'users'],
-        ['label' => __('stoman.nav.recent'), 'route' => 'recent.index', 'icon' => 'clock'],
-        ['label' => __('stoman.nav.starred'), 'route' => 'starred.index', 'icon' => 'star'],
-        ['label' => __('stoman.nav.archive'), 'route' => 'archive.index', 'icon' => 'archive'],
-        ['label' => __('stoman.nav.trash'), 'route' => 'trash.index', 'icon' => 'trash'],
-    ];
-
-    if ($currentUser && $currentUser->isAdmin()) {
-        $nav[] = ['label' => __('stoman.nav.users'), 'route' => 'users.index', 'icon' => 'users'];
+    // Admin sees full navigation; regular users only see Dashboard and My Storage
+    if ($isAdmin) {
+        $nav = [
+            ['label' => __('stoman.nav.home'), 'route' => 'home', 'icon' => 'home'],
+            ['label' => __('stoman.nav.storage'), 'route' => 'storage.index', 'icon' => 'folder'],
+            ['label' => __('stoman.nav.recent'), 'route' => 'recent.index', 'icon' => 'clock'],
+            ['label' => __('stoman.nav.archive'), 'route' => 'archive.index', 'icon' => 'archive'],
+            ['label' => __('stoman.nav.trash'), 'route' => 'trash.index', 'icon' => 'trash'],
+            ['label' => __('stoman.nav.users'), 'route' => 'users.index', 'icon' => 'users'],
+        ];
+    } else {
+        $nav = [
+            ['label' => __('stoman.nav.home'), 'route' => 'home', 'icon' => 'home'],
+            ['label' => __('stoman.nav.storage'), 'route' => 'storage.index', 'icon' => 'folder'],
+        ];
     }
 
     $usedBytes = $currentUser ? \App\Models\FileItem::where('user_id', $currentUser->id)->sum('size') : 0;
@@ -20,8 +24,7 @@
     $percent = min(100, (int) round(($usedBytes / $maxQuotaBytes) * 100));
     $usedFormatted = $usedBytes < 1024 * 1024 ? round($usedBytes / 1024, 1) . ' KB' : round($usedBytes / (1024 * 1024), 1) . ' MB';
     $usedLabel = $usedFormatted . ' of 10 GB';
-    $starredFoldersList = $currentUser ? \App\Models\Folder::where('user_id', $currentUser->id)->where('is_starred', true)->where('is_trashed', false)->limit(5)->get() : collect();
-    $archivedFoldersList = $currentUser ? \App\Models\Folder::where('user_id', $currentUser->id)->where('is_archived', true)->where('is_trashed', false)->limit(5)->get() : collect();
+    $archivedFoldersList = $currentUser && $isAdmin ? \App\Models\Folder::where('user_id', $currentUser->id)->where('is_archived', true)->where('is_trashed', false)->limit(5)->get() : collect();
 @endphp
 
 {{-- Mobile drawer backdrop (768-1023px: sidebar becomes a drawer, PRD section 9). --}}
@@ -102,27 +105,9 @@
         </ul>
     </nav>
 
-    {{-- 5/6. Collapsible Starred + Archive sections --}}
+    {{-- 5/6. Collapsible Archive section (admin only, starred removed) --}}
+    @if($isAdmin)
     <div class="mt-5 flex flex-col gap-4 px-4" x-show="labels">
-        <div x-data="{ open: true }">
-            <div class="flex items-center justify-between">
-                <button type="button" class="rounded px-1 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400 transition-colors hover:text-slate-600 focus-ring"
-                    :aria-expanded="open" @click="open = !open">
-                    {{ __('stoman.nav.starred_section') }}
-                </button>
-            </div>
-            <div x-show="open" x-cloak x-transition class="mt-1 flex flex-col gap-1">
-                @forelse($starredFoldersList as $sf)
-                    <a href="{{ route('storage.folder', $sf->id) }}" class="flex items-center gap-2 rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 truncate">
-                        <x-icon name="folder" :size="14" class="text-amber-500 shrink-0" />
-                        <span class="truncate">{{ $sf->name }}</span>
-                    </a>
-                @empty
-                    <p class="px-1 text-xs text-slate-400">{{ __('stoman.nav.no_starred_folders') }}</p>
-                @endforelse
-            </div>
-        </div>
-
         <div x-data="{ open: false }">
             <div class="flex items-center justify-between">
                 <button type="button" class="rounded px-1 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400 transition-colors hover:text-slate-600 focus-ring"
@@ -142,24 +127,12 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- 7. Storage quota (pinned bottom) + 8. Footer --}}
     <div class="mt-auto px-4 pb-4 pt-5">
         <x-storage-meter class="mb-3" :percent="$percent" :used="$usedLabel" />
         <ul class="flex flex-col gap-1" aria-label="{{ __('stoman.nav.settings') }}">
-            <li class="group relative list-none">
-                <button type="button"
-                    class="flex h-10 w-full items-center rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 focus-ring"
-                    :class="labels ? 'gap-3' : 'justify-center px-0'">
-                    <x-icon name="help" :size="20" class="text-slate-400 transition-colors group-hover:text-slate-600" />
-                    <span x-show="labels">{{ __('stoman.nav.help') }}</span>
-                    <template x-if="!labels">
-                        <span class="pointer-events-none absolute left-full z-50 ml-2 hidden whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-xs font-medium text-white group-hover:block">
-                            {{ __('stoman.nav.help') }}
-                        </span>
-                    </template>
-                </button>
-            </li>
             <li class="group relative list-none">
                 <a href="{{ route('settings.index') }}"
                     class="flex h-10 w-full items-center rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 focus-ring"

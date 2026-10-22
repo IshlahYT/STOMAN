@@ -36,6 +36,11 @@ Route::get('/settings', [SettingsController::class, 'index'])->name('settings.in
 // User Management (restricted to Admin role only)
 Route::middleware('admin')->group(function () {
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/user-management', [UserController::class, 'index'])->name('users.management');
+    Route::get('/users-management', [UserController::class, 'index']);
+    Route::get('/user', [UserController::class, 'index']);
+    Route::get('/admin/users', [UserController::class, 'index']);
+    Route::get('/admin/user-management', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

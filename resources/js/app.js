@@ -45,6 +45,7 @@ Alpine.store('modals', {
     upload: false,
     folder: false,
     share: false,
+    preview: false,
 });
 
 /* Upload modal logic */
@@ -188,6 +189,106 @@ Alpine.data('shareModal', () => ({
     },
 }));
 
+/* File preview modal logic */
+Alpine.data('previewModal', () => ({
+    file: {
+        id: null,
+        name: '',
+        mimeType: '',
+        size: '',
+        url: '',
+        downloadUrl: '',
+    },
+    loading: false,
+    textContent: null,
+    imgError: false,
+
+    get extension() {
+        if (!this.file?.name) return '';
+        const parts = this.file.name.split('.');
+        return parts.length > 1 ? parts.pop().toLowerCase() : '';
+    },
+
+    get category() {
+        const mime = (this.file?.mimeType || '').toLowerCase();
+        const ext = this.extension;
+
+        if (
+            mime.startsWith('image/') ||
+            ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'].includes(ext)
+        ) {
+            return 'image';
+        }
+        if (
+            mime.startsWith('video/') ||
+            ['mp4', 'webm', 'ogg', 'mov', 'm4v', 'mkv'].includes(ext)
+        ) {
+            return 'video';
+        }
+        if (
+            mime.startsWith('audio/') ||
+            ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(ext)
+        ) {
+            return 'audio';
+        }
+        if (mime === 'application/pdf' || ext === 'pdf') {
+            return 'pdf';
+        }
+        if (
+            mime.startsWith('text/') ||
+            ['application/json', 'application/javascript', 'application/xml'].includes(mime) ||
+            ['txt', 'json', 'js', 'css', 'html', 'md', 'csv', 'xml', 'log', 'sh', 'php', 'py', 'sql', 'yaml', 'yml'].includes(ext)
+        ) {
+            return 'text';
+        }
+        return 'other';
+    },
+
+    open(data) {
+        this.file = {
+            id: data.id || null,
+            name: data.name || '',
+            mimeType: data.mimeType || '',
+            size: data.size || '',
+            url: data.url || (data.id ? `/api/files/${data.id}/preview` : ''),
+            downloadUrl: data.downloadUrl || (data.id ? `/api/files/${data.id}/download` : ''),
+        };
+        this.imgError = false;
+        this.textContent = null;
+        Alpine.store('modals').preview = true;
+
+        if (this.category === 'text' && this.file.url) {
+            this.loading = true;
+            fetch(this.file.url)
+                .then((res) => {
+                    if (!res.ok) throw new Error('Failed to load text');
+                    return res.text();
+                })
+                .then((text) => {
+                    this.textContent = text;
+                    this.loading = false;
+                })
+                .catch(() => {
+                    this.textContent = 'Could not load text preview.';
+                    this.loading = false;
+                });
+        }
+    },
+
+    close() {
+        Alpine.store('modals').preview = false;
+        const container = document.getElementById('preview-modal-container');
+        if (container) {
+            const media = container.querySelectorAll('video, audio');
+            media.forEach((el) => {
+                try {
+                    el.pause();
+                } catch (_) {}
+            });
+        }
+    },
+}));
+
 /* DataTables Integration Helper */
 window.initStomanDataTable = function (selector, ajaxUrl, extraParams = {}) {
     const el = document.querySelector(selector);
@@ -233,7 +334,7 @@ window.initStomanDataTable = function (selector, ajaxUrl, extraParams = {}) {
         ],
         order: [[3, 'desc']],
         pageLength: 10,
-        dom: '<"flex flex-col sm:flex-row items-center justify-between gap-3 mb-4"<"dt-search-box"f><"dt-length-box"l>t<"flex flex-col sm:flex-row items-center justify-between gap-3 mt-4"<"text-sm text-slate-500"i><"dt-pagination"p>',
+        dom: 't<"flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-1"<"text-sm text-slate-500"i><"dt-length-box flex items-center gap-2"l><"dt-pagination"p>>',
         language: {
             search: '',
             searchPlaceholder: 'Search files…',
@@ -248,19 +349,11 @@ window.initStomanDataTable = function (selector, ajaxUrl, extraParams = {}) {
         },
     });
 
-    $(selector).on('click', '.btn-dt-star', function () {
-        const id = $(this).data('id');
-        const starred = $(this).data('starred') !== '1';
-        api.star(id, starred).then(() => {
-            Alpine.store('ui').toast('success', starred ? 'Starred' : 'Unstarred');
-            dt.ajax.reload(null, false);
-        });
-    });
-
     $(selector).on('click', '.btn-dt-trash', function () {
         const id = $(this).data('id');
+        if (!confirm('Hapus file ini?')) return;
         api.destroy([id]).then(() => {
-            Alpine.store('ui').toast('success', 'Moved to trash');
+            Alpine.store('ui').toast('success', 'Dihapus');
             dt.ajax.reload(null, false);
         });
     });
@@ -281,6 +374,19 @@ window.initStomanDataTable = function (selector, ajaxUrl, extraParams = {}) {
                 dt.ajax.reload(null, false);
             });
         }
+    });
+
+    $(selector).on('click', '.btn-dt-preview', function (e) {
+        e.preventDefault();
+        const data = {
+            id: $(this).data('id'),
+            name: $(this).data('name'),
+            mimeType: $(this).data('mime'),
+            size: $(this).data('size'),
+            url: $(this).data('url'),
+            downloadUrl: $(this).data('download'),
+        };
+        window.dispatchEvent(new CustomEvent('open-preview', { detail: data }));
     });
 
     $(selector).on('change', '.dt-checkbox', function () {

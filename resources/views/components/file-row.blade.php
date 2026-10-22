@@ -4,11 +4,45 @@
     'owner' => '',
     'modified' => '',
     'size' => '',
+    'mimeType' => '',
+    'url' => '',
+    'downloadUrl' => '',
     'trash' => false,   // Trash page shows Restore + Delete Permanently instead of the menu
 ])
 
 @php
     $canManage = auth()->user()?->isAdmin() ?? false;
+    $previewUrl = ($url && $url !== '#') ? $url : ($id ? route('api.files.preview', $id) : '#');
+    $downUrl = $downloadUrl ?: ($id ? route('api.files.download', $id) : '#');
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    $inferredMime = match($ext) {
+        'jpg', 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'svg' => 'image/svg+xml',
+        'bmp' => 'image/bmp',
+        'mp4' => 'video/mp4',
+        'webm' => 'video/webm',
+        'ogg' => 'video/ogg',
+        'mov' => 'video/quicktime',
+        'mp3' => 'audio/mpeg',
+        'wav' => 'audio/wav',
+        'pdf' => 'application/pdf',
+        'txt' => 'text/plain',
+        'json' => 'application/json',
+        'csv' => 'text/csv',
+        default => '',
+    };
+    $effectiveMime = $mimeType ?: $inferredMime;
+    $previewPayload = [
+        'id' => $id,
+        'name' => $name,
+        'mimeType' => $effectiveMime,
+        'size' => $size,
+        'url' => $previewUrl,
+        'downloadUrl' => $downUrl,
+    ];
 @endphp
 
 {{-- PRD 6.5 list mode: checkbox | icon + name | owner | last modified | size | menu.
@@ -63,15 +97,13 @@
                     </span>
                 </x-slot:trigger>
                 <x-slot:panel>
-                    <x-menu-item icon="eye" href="{{ route('api.files.preview', $id) }}" target="_blank">{{ __('stoman.common.preview') }}</x-menu-item>
-                    <x-menu-item icon="download" href="{{ route('api.files.download', $id) }}" download>{{ __('stoman.common.download') }}</x-menu-item>
+                    <x-menu-item icon="eye" x-on:click="$dispatch('open-preview', {{ \Illuminate\Support\Js::from($previewPayload) }})">{{ __('stoman.common.view') }}</x-menu-item>
+                    <x-menu-item icon="download" href="{{ $downUrl }}" download>{{ __('stoman.common.download') }}</x-menu-item>
                     @if($canManage)
-                        <x-menu-item icon="star" @click="window.stomanApi.star('{{ $id }}', true).then(() => { $store.ui.toast('success', 'Starred'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.star') }}</x-menu-item>
                         <x-menu-item icon="pencil" @click="const n = prompt('Enter new name:', '{{ $name }}'); if(n && n !== '{{ $name }}') window.stomanApi.rename('{{ $id }}', n).then(() => window.location.reload());">{{ __('stoman.common.rename') }}</x-menu-item>
-                        <x-menu-item icon="share" @click="$store.modals.share = true">{{ __('stoman.common.share') }}</x-menu-item>
                         <x-menu-item icon="archive" @click="window.stomanApi.archive(['{{ $id }}']).then(() => { $store.ui.toast('success', 'Archived'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.archive') }}</x-menu-item>
                         <div class="my-1 h-px bg-slate-200"></div>
-                        <x-menu-item icon="trash" danger @click="window.stomanApi.destroy(['{{ $id }}']).then(() => { $store.ui.toast('success', 'Moved to trash'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.trash') }}</x-menu-item>
+                        <x-menu-item icon="trash" danger @click="if(confirm('Hapus file ini?')) window.stomanApi.destroy(['{{ $id }}']).then(() => { $store.ui.toast('success', 'Dihapus'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.delete') }}</x-menu-item>
                     @endif
                 </x-slot:panel>
             </x-dropdown>

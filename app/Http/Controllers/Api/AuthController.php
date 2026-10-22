@@ -63,9 +63,9 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name'    => $validated['name'],
-            'email'   => $validated['email'],
-            'password'=> Hash::make($validated['password']),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
             'role_id' => Role::USER, // Self-registered users get read-only role
         ]);
 
@@ -131,9 +131,9 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name'    => $validated['name'],
-            'email'   => $validated['email'],
-            'password'=> Hash::make($validated['password']),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
             'role_id' => Role::USER, // Self-registered users get read-only role
         ]);
 
@@ -156,7 +156,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'user' => $user,  
+            'user' => $user,
         ]);
     }
 

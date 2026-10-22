@@ -305,4 +305,80 @@ class RoleBasedSystemTest extends TestCase
         $response = $this->delete(route('users.destroy', $this->admin->id));
         $this->assertDatabaseHas('users', ['id' => $this->admin->id]);
     }
+
+    public function test_preview_modal_is_included_in_storage_layout(): void
+    {
+        $this->actingAs($this->admin, 'web');
+
+        $response = $this->get(route('storage.index'));
+        $response->assertOk();
+        $response->assertSee('preview-modal-container');
+        $response->assertSee('previewModal');
+    }
+
+    public function test_file_card_renders_view_menu_item_with_open_preview(): void
+    {
+        $this->actingAs($this->admin, 'web');
+
+        $file = FileItem::create([
+            'user_id' => $this->admin->id,
+            'name' => 'sample_video.mp4',
+            'path' => 'uploads/sample_video.mp4',
+            'mime_type' => 'video/mp4',
+            'size' => 1024 * 1024 * 5,
+        ]);
+
+        $response = $this->get(route('storage.index'));
+        $response->assertOk();
+        $response->assertSee('sample_video.mp4');
+        $response->assertSee('open-preview');
+        $response->assertSee('View');
+    }
+
+    public function test_preview_endpoint_serves_correct_mime_types(): void
+    {
+        $this->actingAs($this->standardUser, 'web');
+
+        // Test video preview
+        Storage::disk('local')->put('uploads/test_video.mp4', 'dummy video content');
+        $videoFile = FileItem::create([
+            'user_id' => $this->admin->id,
+            'name' => 'test_video.mp4',
+            'path' => 'uploads/test_video.mp4',
+            'mime_type' => 'video/mp4',
+            'size' => 100,
+        ]);
+
+        $res = $this->get(route('api.files.preview', $videoFile->id));
+        $res->assertOk();
+        $res->assertHeader('Content-Type', 'video/mp4');
+
+        // Test PDF preview
+        Storage::disk('local')->put('uploads/document.pdf', 'dummy pdf content');
+        $pdfFile = FileItem::create([
+            'user_id' => $this->admin->id,
+            'name' => 'document.pdf',
+            'path' => 'uploads/document.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 100,
+        ]);
+
+        $resPdf = $this->get(route('api.files.preview', $pdfFile->id));
+        $resPdf->assertOk();
+        $resPdf->assertHeader('Content-Type', 'application/pdf');
+
+        // Test image preview
+        Storage::disk('local')->put('uploads/photo.jpg', 'dummy image content');
+        $imgFile = FileItem::create([
+            'user_id' => $this->admin->id,
+            'name' => 'photo.jpg',
+            'path' => 'uploads/photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'size' => 100,
+        ]);
+
+        $resImg = $this->get(route('api.files.preview', $imgFile->id));
+        $resImg->assertOk();
+        $resImg->assertHeader('Content-Type', 'image/jpeg');
+    }
 }

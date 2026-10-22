@@ -245,8 +245,26 @@
             <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l1.3-1.3" />
         @break
 
-        @case('spinner')
-            <path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5" opacity=".9" />
+        @case('image')
+            <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+            <circle cx="8.5" cy="9.5" r="1.5" />
+            <path d="m20.5 15.5-5-5-6 6-2-2-4 4" />
+        @break
+
+        @case('video')
+            <rect x="3" y="5.5" width="13" height="13" rx="2" />
+            <polygon points="16 9.5 21 6.5 21 17.5 16 14.5" />
+        @break
+
+        @case('music')
+            <path d="M9 18V5l10-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="16" cy="16" r="3" />
+        @break
+
+        @case('code')
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
         @break
 
         @default

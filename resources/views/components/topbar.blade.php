@@ -51,21 +51,8 @@
         </div>
     </div>
 
-    {{-- Right: notifications, help, avatar --}}
+    {{-- Right: avatar only (notifications and help removed) --}}
     <div class="ml-auto flex items-center gap-1 md:ml-0">
-        <button type="button"
-            class="relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 focus-ring"
-            aria-label="{{ __('stoman.common.notifications') }}">
-            <x-icon name="bell" :size="20" />
-            @if($notifications)
-                <span class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-danger-600"></span>
-            @endif
-        </button>
-        <button type="button"
-            class="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 focus-ring"
-            aria-label="{{ __('stoman.nav.help') }}">
-            <x-icon name="help" :size="20" />
-        </button>
         <div class="ml-1">
             <x-account-menu variant="avatar" />
         </div>

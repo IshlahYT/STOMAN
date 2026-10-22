@@ -44,11 +44,13 @@
                 @endif
             </nav>
 
+            @if(auth()->user()?->isAdmin())
             <div class="flex shrink-0 items-center gap-2">
                 <x-sort-menu :disabled="$isEmpty" />
                 <x-view-toggle :disabled="$isEmpty" />
                 <x-new-menu size="s" />
             </div>
+            @endif
         </div>
 
         <x-action-bar />
@@ -63,16 +65,18 @@
             </div>
 
             @if($isEmpty)
-                {{-- Default state: centered empty state with the two CTAs (PRD 7.3) --}}
+                {{-- Default state: centered empty state with CTAs (admin only) --}}
                 <div class="flex flex-1 items-center justify-center">
                     <x-empty-state :title="__('stoman.storage.empty_title')" :description="__('stoman.storage.empty_desc')"
                         icon="folder">
-                        <x-button icon="upload" data-upload-trigger @click="$store.modals.upload = true">
-                            {{ __('stoman.common.upload_file') }}
-                        </x-button>
-                        <x-button variant="secondary" icon="folder-plus" @click="$store.modals.folder = true">
-                            {{ __('stoman.common.create_folder') }}
-                        </x-button>
+                        @if(auth()->user()?->isAdmin())
+                            <x-button icon="upload" data-upload-trigger @click="$store.modals.upload = true">
+                                {{ __('stoman.common.upload_file') }}
+                            </x-button>
+                            <x-button variant="secondary" icon="folder-plus" @click="$store.modals.folder = true">
+                                {{ __('stoman.common.create_folder') }}
+                            </x-button>
+                        @endif
                     </x-empty-state>
                 </div>
             @else
@@ -116,7 +120,11 @@
                             class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             @foreach ($files as $item)
                                 <x-file-card :id="data_get($item, 'id')" :name="data_get($item, 'name', '')"
-                                    :meta="data_get($item, 'modified_label', '')" />
+                                    :meta="data_get($item, 'modified_label', '')"
+                                    :mime-type="data_get($item, 'mime_type', '')"
+                                    :size="data_get($item, 'size_label', '')"
+                                    :url="data_get($item, 'url', '#')"
+                                    :download-url="data_get($item, 'download_url', '#')" />
                             @endforeach
                         </div>
 

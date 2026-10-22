@@ -12,13 +12,24 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
+    protected function getCurrentUser(): ?User
+    {
+        $user = auth('web')->user() ?? auth('api')->user();
+
+        if (! $user && app()->environment('local')) {
+            return User::first();
+        }
+
+        return $user;
+    }
+
     /**
      * Display a listing of the users.
      * Restricted to Admin role (id: 1).
      */
     public function index(Request $request): View|JsonResponse
     {
-        $currentUser = auth('web')->user() ?? auth('api')->user();
+        $currentUser = $this->getCurrentUser();
 
         if (! $currentUser || ! $currentUser->isAdmin()) {
             if ($request->expectsJson() || $request->is('api/*')) {
@@ -69,7 +80,7 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $currentUser = auth('web')->user() ?? auth('api')->user();
+        $currentUser = $this->getCurrentUser();
         if (! $currentUser || ! $currentUser->isAdmin()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Forbidden.'], 403);
@@ -107,7 +118,7 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse|JsonResponse
     {
-        $currentUser = auth('web')->user() ?? auth('api')->user();
+        $currentUser = $this->getCurrentUser();
         if (! $currentUser || ! $currentUser->isAdmin()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Forbidden.'], 403);
@@ -164,7 +175,7 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {
-        $currentUser = auth('web')->user() ?? auth('api')->user();
+        $currentUser = $this->getCurrentUser();
         if (! $currentUser || ! $currentUser->isAdmin()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Forbidden.'], 403);

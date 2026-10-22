@@ -5,6 +5,7 @@
 @section('content')
     @php
         $displayName = auth()->user()?->name ?? __('stoman.account.guest');
+        $isAdmin = auth()->user()?->isAdmin() ?? false;
     @endphp
 
     <div class="space-y-8" x-data="{ view: 'grid' }">
@@ -28,8 +29,9 @@
             </div>
         </header>
 
-        {{-- Quick action cards (PRD 7.2) --}}
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {{-- Quick action cards — only for Admin --}}
+        @if($isAdmin)
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <button type="button" data-upload-trigger @click="$store.modals.upload = true"
                 class="flex h-[120px] items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-card transition-all hover:shadow-card-hover focus-ring">
                 <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
@@ -51,60 +53,8 @@
                     <span class="mt-0.5 block truncate text-sm text-slate-600">{{ __('stoman.home.create_folder_desc') }}</span>
                 </span>
             </button>
-
-            <button type="button" @click="$store.modals.share = true"
-                class="flex h-[120px] items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-card transition-all hover:shadow-card-hover focus-ring">
-                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700">
-                    <x-icon name="users" :size="22" />
-                </span>
-                <span class="min-w-0">
-                    <span class="block text-base font-semibold text-slate-900">{{ __('stoman.common.invite_member') }}</span>
-                    <span class="mt-0.5 block truncate text-sm text-slate-600">{{ __('stoman.home.invite_member_desc') }}</span>
-                </span>
-            </button>
         </div>
-
-        {{-- Starred Folders --}}
-        <section>
-            <h2 class="mb-2 text-xl font-semibold leading-7 text-slate-900">{{ __('stoman.home.starred_title') }}</h2>
-            @if($starredFolders->isEmpty())
-                <x-empty-state variant="small" icon="star" :title="__('stoman.home.no_starred')" />
-            @else
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    @foreach ($starredFolders as $item)
-                        <x-folder-card
-                            :id="data_get($item, 'id')"
-                            :name="data_get($item, 'name', '')"
-                            :meta="data_get($item, 'meta_label', '')"
-                            :url="data_get($item, 'url', '#')"
-                            :starred="(bool) data_get($item, 'is_starred', false)" />
-                    @endforeach
-                </div>
-            @endif
-        </section>
-
-        {{-- Collaborative Folders --}}
-        <section>
-            <h2 class="mb-2 text-xl font-semibold leading-7 text-slate-900">{{ __('stoman.home.collab_title') }}</h2>
-            @if($collaborativeFolders->isEmpty())
-                <x-empty-state variant="small" icon="users" :title="__('stoman.home.no_collab')">
-                    <x-button variant="secondary" icon="folder-plus" @click="$store.modals.folder = true">
-                        {{ __('stoman.common.create_folder') }}
-                    </x-button>
-                </x-empty-state>
-            @else
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    @foreach ($collaborativeFolders as $item)
-                        <x-folder-card
-                            :id="data_get($item, 'id')"
-                            :name="data_get($item, 'name', '')"
-                            :meta="data_get($item, 'meta_label', '')"
-                            :url="data_get($item, 'url', '#')"
-                            :starred="(bool) data_get($item, 'is_starred', false)" />
-                    @endforeach
-                </div>
-            @endif
-        </section>
+        @endif
 
         {{-- Recently Opened Files --}}
         <section>
@@ -113,9 +63,11 @@
             </div>
             @if($files->isEmpty())
                 <x-empty-state variant="small" icon="file" :title="__('stoman.home.no_files')">
-                    <x-button icon="upload" data-upload-trigger @click="$store.modals.upload = true">
-                        {{ __('stoman.common.upload_file') }}
-                    </x-button>
+                    @if($isAdmin)
+                        <x-button icon="upload" data-upload-trigger @click="$store.modals.upload = true">
+                            {{ __('stoman.common.upload_file') }}
+                        </x-button>
+                    @endif
                 </x-empty-state>
             @else
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -123,10 +75,30 @@
                         <x-file-card
                             :id="data_get($item, 'id')"
                             :name="data_get($item, 'name', '')"
-                            :meta="data_get($item, 'modified_label', '')" />
+                            :meta="data_get($item, 'modified_label', '')"
+                            :mime-type="data_get($item, 'mime_type', '')"
+                            :size="data_get($item, 'size_label', '')"
+                            :url="data_get($item, 'url', '#')"
+                            :download-url="data_get($item, 'download_url', '#')" />
                     @endforeach
                 </div>
             @endif
         </section>
+
+        {{-- Folders --}}
+        @if(!$folders->isEmpty())
+        <section>
+            <h2 class="mb-2 text-xl font-semibold leading-7 text-slate-900">{{ __('stoman.storage.folders_section') }}</h2>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                @foreach ($folders as $item)
+                    <x-folder-card
+                        :id="data_get($item, 'id')"
+                        :name="data_get($item, 'name', '')"
+                        :meta="data_get($item, 'meta_label', '')"
+                        :url="data_get($item, 'url', '#')" />
+                @endforeach
+            </div>
+        </section>
+        @endif
     </div>
 @endsection

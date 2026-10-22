@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\FileItem;
 use App\Models\Folder;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -16,16 +17,47 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::firstOrCreate(
-            ['email' => 'test@example.com'],
+        // 1. Admin user (id: 1 role)
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@example.com'],
             [
-                'name' => 'Demo User',
+                'name' => 'Admin User',
+                'role_id' => Role::ADMIN,
                 'password' => Hash::make('password'),
             ]
         );
+        $admin->update([
+            'role_id' => Role::ADMIN,
+            'password' => Hash::make('password'),
+        ]);
 
-        // Ensure user password is known
-        $user->update(['password' => Hash::make('password')]);
+        // 2. Regular user (id: 2 role - read only)
+        $standardUser = User::firstOrCreate(
+            ['email' => 'user@example.com'],
+            [
+                'name' => 'Standard User',
+                'role_id' => Role::USER,
+                'password' => Hash::make('password'),
+            ]
+        );
+        $standardUser->update([
+            'role_id' => Role::USER,
+            'password' => Hash::make('password'),
+        ]);
+
+        // Demo user (defaults to Admin for backward compatibility)
+        $user = User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Demo Admin',
+                'role_id' => Role::ADMIN,
+                'password' => Hash::make('password'),
+            ]
+        );
+        $user->update([
+            'role_id' => Role::ADMIN,
+            'password' => Hash::make('password'),
+        ]);
 
         // Seed some sample folders if none exist
         if (Folder::where('user_id', $user->id)->count() === 0) {

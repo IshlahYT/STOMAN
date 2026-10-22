@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -25,12 +26,33 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'role_id' => Role::USER,
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Indicate that the user is an Administrator (id: 1).
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::ADMIN,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is a standard User (id: 2).
+     */
+    public function userRole(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::USER,
+        ]);
     }
 
     /**

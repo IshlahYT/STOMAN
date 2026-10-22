@@ -23,6 +23,7 @@ return [
         'starred' => 'Starred',
         'archive' => 'Archive',
         'trash' => 'Trash',
+        'users' => 'User Management',
         'help' => 'Help Center',
         'settings' => 'Settings',
         'new' => 'New',

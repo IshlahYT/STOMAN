@@ -9,6 +9,7 @@ use App\Http\Controllers\SharedController;
 use App\Http\Controllers\StarredController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -31,6 +32,14 @@ Route::get('/starred', [StarredController::class, 'index'])->name('starred.index
 Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
 Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
 Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+
+// User Management (restricted to Admin role only)
+Route::middleware('admin')->group(function () {
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+});
 
 // Error pages, also directly accessible for review/QA.
 foreach (['403', '404', '500'] as $code) {

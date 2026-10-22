@@ -17,17 +17,24 @@
                 </span>
             </x-slot:trigger>
             <x-slot:panel>
+                @php
+                    $canManage = auth()->user()?->isAdmin() ?? false;
+                @endphp
                 @if($id)
                     <x-menu-item icon="eye" href="{{ route('api.files.preview', $id) }}" target="_blank">{{ __('stoman.common.preview') }}</x-menu-item>
                     <x-menu-item icon="download" href="{{ route('api.files.download', $id) }}" download>{{ __('stoman.common.download') }}</x-menu-item>
-                    <x-menu-item icon="star" @click="window.stomanApi.star('{{ $id }}', true).then(() => { $store.ui.toast('success', 'Starred'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.star') }}</x-menu-item>
-                    <x-menu-item icon="pencil" @click="const n = prompt('Enter new name:', '{{ $name }}'); if(n && n !== '{{ $name }}') window.stomanApi.rename('{{ $id }}', n).then(() => window.location.reload());">{{ __('stoman.common.rename') }}</x-menu-item>
-                    <x-menu-item icon="share" @click="$store.modals.share = true">{{ __('stoman.common.share') }}</x-menu-item>
-                    <x-menu-item icon="archive" @click="window.stomanApi.archive(['{{ $id }}']).then(() => { $store.ui.toast('success', 'Archived'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.archive') }}</x-menu-item>
-                    <div class="my-1 h-px bg-slate-200"></div>
-                    <x-menu-item icon="trash" danger @click="window.stomanApi.destroy(['{{ $id }}']).then(() => { $store.ui.toast('success', 'Moved to trash'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.trash') }}</x-menu-item>
+                    @if($canManage)
+                        <x-menu-item icon="star" @click="window.stomanApi.star('{{ $id }}', true).then(() => { $store.ui.toast('success', 'Starred'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.star') }}</x-menu-item>
+                        <x-menu-item icon="pencil" @click="const n = prompt('Enter new name:', '{{ $name }}'); if(n && n !== '{{ $name }}') window.stomanApi.rename('{{ $id }}', n).then(() => window.location.reload());">{{ __('stoman.common.rename') }}</x-menu-item>
+                        <x-menu-item icon="share" @click="$store.modals.share = true">{{ __('stoman.common.share') }}</x-menu-item>
+                        <x-menu-item icon="archive" @click="window.stomanApi.archive(['{{ $id }}']).then(() => { $store.ui.toast('success', 'Archived'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.archive') }}</x-menu-item>
+                        <div class="my-1 h-px bg-slate-200"></div>
+                        <x-menu-item icon="trash" danger @click="window.stomanApi.destroy(['{{ $id }}']).then(() => { $store.ui.toast('success', 'Moved to trash'); setTimeout(() => window.location.reload(), 300); })">{{ __('stoman.common.trash') }}</x-menu-item>
+                    @endif
                 @else
-                    <x-menu-item icon="share" @click="$store.modals.share = true">{{ __('stoman.common.share') }}</x-menu-item>
+                    @if($canManage)
+                        <x-menu-item icon="share" @click="$store.modals.share = true">{{ __('stoman.common.share') }}</x-menu-item>
+                    @endif
                 @endif
             </x-slot:panel>
         </x-dropdown>

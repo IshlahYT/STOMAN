@@ -25,6 +25,13 @@ class FolderController extends Controller
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        if (! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden. Only administrators can manage folders.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'regex:/^[^\/\\:*?"<>|]+$/'],
             'color' => ['nullable', 'string', 'in:primary,sky,violet,rose,amber,slate'],
@@ -68,6 +75,14 @@ class FolderController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
+        $user = $this->getUser();
+        if (! $user || ! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden. Only administrators can manage folders.',
+            ], 403);
+        }
+
         $folder = Folder::findOrFail($id);
 
         $validated = $request->validate([
@@ -88,6 +103,14 @@ class FolderController extends Controller
      */
     public function destroy(int $id): JsonResponse
     {
+        $user = $this->getUser();
+        if (! $user || ! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden. Only administrators can manage folders.',
+            ], 403);
+        }
+
         $folder = Folder::findOrFail($id);
         $folder->update([
             'is_trashed' => true,

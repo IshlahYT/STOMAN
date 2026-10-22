@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -62,9 +63,10 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name'    => $validated['name'],
+            'email'   => $validated['email'],
+            'password'=> Hash::make($validated['password']),
+            'role_id' => Role::USER, // Self-registered users get read-only role
         ]);
 
         Auth::login($user);
@@ -129,9 +131,10 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name'    => $validated['name'],
+            'email'   => $validated['email'],
+            'password'=> Hash::make($validated['password']),
+            'role_id' => Role::USER, // Self-registered users get read-only role
         ]);
 
         $token = auth('api')->login($user);
@@ -153,7 +156,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'user' => $user,
+            'user' => $user,  
         ]);
     }
 

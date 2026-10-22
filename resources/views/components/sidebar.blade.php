@@ -1,4 +1,6 @@
 @php
+    $currentUser = auth('web')->user() ?? auth('api')->user() ?? \App\Models\User::first();
+
     $nav = [
         ['label' => __('stoman.nav.home'), 'route' => 'home', 'icon' => 'home'],
         ['label' => __('stoman.nav.storage'), 'route' => 'storage.index', 'icon' => 'folder'],
@@ -9,7 +11,10 @@
         ['label' => __('stoman.nav.trash'), 'route' => 'trash.index', 'icon' => 'trash'],
     ];
 
-    $currentUser = auth('web')->user() ?? auth('api')->user() ?? \App\Models\User::first();
+    if ($currentUser && $currentUser->isAdmin()) {
+        $nav[] = ['label' => __('stoman.nav.users'), 'route' => 'users.index', 'icon' => 'users'];
+    }
+
     $usedBytes = $currentUser ? \App\Models\FileItem::where('user_id', $currentUser->id)->sum('size') : 0;
     $maxQuotaBytes = 10 * 1024 * 1024 * 1024; // 10 GB
     $percent = min(100, (int) round(($usedBytes / $maxQuotaBytes) * 100));
@@ -54,9 +59,18 @@
         <x-account-menu variant="card" />
     </div>
 
-    {{-- 3. "+ New" button --}}
+    {{-- 3. "+ New" button for Admin / Read-only badge for User --}}
     <div class="mx-4 mt-4">
-        <x-new-menu size="m" block :trigger-id="'btn-new'" />
+        @if($currentUser && $currentUser->isAdmin())
+            <x-new-menu size="m" block :trigger-id="'btn-new'" />
+        @else
+            <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-500 shadow-sm"
+                :class="!labels ? 'justify-center px-0' : ''"
+                title="Read-only permissions: viewing files only">
+                <x-icon name="eye" :size="18" class="text-slate-400 shrink-0" />
+                <span x-show="labels" class="truncate font-semibold text-slate-700">Read-Only Mode</span>
+            </div>
+        @endif
     </div>
 
     {{-- 4. Main navigation --}}

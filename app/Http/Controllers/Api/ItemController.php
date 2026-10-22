@@ -89,10 +89,33 @@ class ItemController extends Controller
     }
 
     /**
+     * Ensure user has Admin privileges for mutating operations.
+     */
+    protected function ensureAdmin(?User $user): ?JsonResponse
+    {
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        if (! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden. Only administrators can manage folders and files.',
+            ], 403);
+        }
+
+        return null;
+    }
+
+    /**
      * Rename an item.
      */
     public function rename(Request $request, int|string $id): JsonResponse
     {
+        if ($denied = $this->ensureAdmin($this->getUser())) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
         ]);
@@ -122,6 +145,10 @@ class ItemController extends Controller
      */
     public function star(Request $request, int|string $id): JsonResponse
     {
+        if ($denied = $this->ensureAdmin($this->getUser())) {
+            return $denied;
+        }
+
         $starred = $request->boolean('starred', true);
 
         $file = FileItem::find($id);
@@ -146,6 +173,10 @@ class ItemController extends Controller
      */
     public function move(Request $request): JsonResponse
     {
+        if ($denied = $this->ensureAdmin($this->getUser())) {
+            return $denied;
+        }
+
         $request->validate([
             'ids' => ['required', 'array'],
             'target' => ['nullable'],
@@ -168,6 +199,10 @@ class ItemController extends Controller
      */
     public function share(Request $request, int|string $id): JsonResponse
     {
+        if ($denied = $this->ensureAdmin($this->getUser())) {
+            return $denied;
+        }
+
         $user = $this->getUser();
         $members = $request->input('members', []);
         $role = $request->input('role', 'viewer');
@@ -195,6 +230,10 @@ class ItemController extends Controller
      */
     public function archive(Request $request): JsonResponse
     {
+        if ($denied = $this->ensureAdmin($this->getUser())) {
+            return $denied;
+        }
+
         $ids = $request->input('ids', []);
 
         FileItem::whereIn('id', $ids)->update(['is_archived' => true]);
@@ -208,6 +247,10 @@ class ItemController extends Controller
      */
     public function destroy(Request $request): JsonResponse
     {
+        if ($denied = $this->ensureAdmin($this->getUser())) {
+            return $denied;
+        }
+
         $ids = $request->input('ids', []);
 
         $files = FileItem::whereIn('id', $ids)->get();
@@ -241,6 +284,10 @@ class ItemController extends Controller
      */
     public function restore(Request $request): JsonResponse
     {
+        if ($denied = $this->ensureAdmin($this->getUser())) {
+            return $denied;
+        }
+
         $ids = $request->input('ids', []);
 
         FileItem::whereIn('id', $ids)->update(['is_trashed' => false, 'trashed_at' => null]);
@@ -255,8 +302,8 @@ class ItemController extends Controller
     public function emptyTrash(): JsonResponse
     {
         $user = $this->getUser();
-        if (! $user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+        if ($denied = $this->ensureAdmin($user)) {
+            return $denied;
         }
 
         $files = FileItem::where('user_id', $user->id)->where('is_trashed', true)->get();

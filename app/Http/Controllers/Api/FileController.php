@@ -28,6 +28,13 @@ class FileController extends Controller
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        if (! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden. Only administrators can upload files.',
+            ], 403);
+        }
+
         $request->validate([
             'file' => ['required', 'file'],
             'folder_id' => ['nullable'],

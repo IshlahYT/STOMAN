@@ -7,7 +7,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * Smoke test: every STOMAN page renders in its empty state (PRD section 12).
+ * Smoke test: the app never bypasses authentication — guests are redirected
+ * to the Login page, while auth pages and the QA error pages stay reachable.
  */
 class PagesRenderTest extends TestCase
 {
@@ -16,17 +17,20 @@ class PagesRenderTest extends TestCase
     public static function pageRoutes(): array
     {
         return [
-            'home' => ['/', 200],
+            // Protected pages: guests get redirected to Login.
+            'home' => ['/', 302],
+            'storage' => ['/storage', 302],
+            'storage folder' => ['/storage/documents', 302],
+            'shared' => ['/shared', 302],
+            'recent' => ['/recent', 302],
+            'starred' => ['/starred', 302],
+            'archive' => ['/archive', 302],
+            'trash' => ['/trash', 302],
+            'settings' => ['/settings', 302],
+            // Public pages.
             'login' => ['/login', 200],
             'register' => ['/register', 200],
-            'storage' => ['/storage', 200],
-            'storage folder' => ['/storage/documents', 200],
-            'shared' => ['/shared', 200],
-            'recent' => ['/recent', 200],
-            'starred' => ['/starred', 200],
-            'archive' => ['/archive', 200],
-            'trash' => ['/trash', 200],
-            'settings' => ['/settings', 200],
+            // Error pages, also directly accessible for review/QA.
             'error 403' => ['/errors/403', 403],
             'error 404' => ['/errors/404', 404],
             'error 500' => ['/errors/500', 500],
@@ -40,7 +44,16 @@ class PagesRenderTest extends TestCase
         $response = $this->get($uri);
 
         $response->assertStatus($status);
-        $response->assertSee('STOMAN');
+
+        if ($status === 302) {
+            $response->assertRedirect(route('login'));
+
+            return;
+        }
+
+        if ($status === 200) {
+            $response->assertSee('STOMAN');
+        }
     }
 
     public function test_pages_contain_no_raw_hex_colors(): void

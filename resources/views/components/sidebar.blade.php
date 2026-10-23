@@ -1,8 +1,9 @@
 @php
-    $currentUser = auth('web')->user() ?? auth('api')->user() ?? \App\Models\User::first();
-    $isAdmin = $currentUser && $currentUser->isAdmin();
+    // Resolve the currently authenticated user dynamically (web session or JWT).
+    $currentUser = auth('web')->user() ?? auth('api')->user();
+    $isAdmin = $currentUser?->isAdmin() ?? false;
 
-    // Admin sees full navigation; regular users only see Dashboard and My Storage
+    // Admin sees the full navigation; regular users strictly see ONLY "My Folder".
     if ($isAdmin) {
         $nav = [
             ['label' => __('stoman.nav.home'), 'route' => 'home', 'icon' => 'home'],
@@ -14,16 +15,17 @@
         ];
     } else {
         $nav = [
-            ['label' => __('stoman.nav.home'), 'route' => 'home', 'icon' => 'home'],
-            ['label' => __('stoman.nav.storage'), 'route' => 'storage.index', 'icon' => 'folder'],
+            ['label' => __('stoman.nav.my_folder'), 'route' => 'home', 'icon' => 'folder'],
         ];
     }
 
-    $usedBytes = $currentUser ? \App\Models\FileItem::where('user_id', $currentUser->id)->sum('size') : 0;
-    $maxQuotaBytes = 10 * 1024 * 1024 * 1024; // 10 GB
-    $percent = min(100, (int) round(($usedBytes / $maxQuotaBytes) * 100));
-    $usedFormatted = $usedBytes < 1024 * 1024 ? round($usedBytes / 1024, 1) . ' KB' : round($usedBytes / (1024 * 1024), 1) . ' MB';
-    $usedLabel = $usedFormatted . ' of 10 GB';
+    if ($isAdmin) {
+        $usedBytes = $currentUser ? \App\Models\FileItem::where('user_id', $currentUser->id)->sum('size') : 0;
+        $maxQuotaBytes = 10 * 1024 * 1024 * 1024; // 10 GB
+        $percent = min(100, (int) round(($usedBytes / $maxQuotaBytes) * 100));
+        $usedFormatted = $usedBytes < 1024 * 1024 ? round($usedBytes / 1024, 1) . ' KB' : round($usedBytes / (1024 * 1024), 1) . ' MB';
+        $usedLabel = $usedFormatted . ' of 10 GB';
+    }
     $archivedFoldersList = $currentUser && $isAdmin ? \App\Models\Folder::where('user_id', $currentUser->id)->where('is_archived', true)->where('is_trashed', false)->limit(5)->get() : collect();
 @endphp
 
@@ -57,9 +59,9 @@
         </button>
     </div>
 
-    {{-- 2. Account card --}}
+    {{-- 2. Account card (shows the authenticated user's name + email dynamically) --}}
     <div class="mx-4 mt-4">
-        <x-account-menu variant="card" />
+        <x-account-menu variant="card" :user="$currentUser" />
     </div>
 
     {{-- 3. "+ New" button for Admin / Read-only badge for User --}}
@@ -77,7 +79,7 @@
     </div>
 
     {{-- 4. Main navigation --}}
-    <nav class="mt-6" aria-label="{{ __('stoman.nav.home') }}">
+    <nav class="mt-6" aria-label="{{ __('stoman.nav.main') }}">
         <ul class="flex flex-col gap-1 px-3">
         @foreach ($nav as $item)
             @php $active = request()->routeIs($item['route']); @endphp
@@ -129,7 +131,9 @@
     </div>
     @endif
 
-    {{-- 7. Storage quota (pinned bottom) + 8. Footer --}}
+    {{-- 7. Storage quota (pinned bottom) + 8. Footer — Admin only.
+         Regular users strictly see ONLY the Home (Dashboard) menu. --}}
+    @if($isAdmin)
     <div class="mt-auto px-4 pb-4 pt-5">
         <x-storage-meter class="mb-3" :percent="$percent" :used="$usedLabel" />
         <ul class="flex flex-col gap-1" aria-label="{{ __('stoman.nav.settings') }}">
@@ -148,4 +152,5 @@
             </li>
         </ul>
     </div>
+    @endif
 </aside>

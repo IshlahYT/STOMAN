@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
-@section('title', __('stoman.nav.home'))
+{{-- Role-aware page title: Admin sees "Home", regular users see "My Folder". --}}
+@section('title', auth()->user()?->isAdmin() ? __('stoman.nav.home') : __('stoman.nav.my_folder'))
 
 @section('content')
     @php

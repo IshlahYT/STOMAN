@@ -46,7 +46,10 @@
 
 {{-- PRD 6.5 grid mode: card with 120px thumbnail + name + modified.
      Clicking selects the file and opens the detail panel. --}}
-<div class="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card transition-all hover:shadow-card-hover">
+{{-- NOTE: no overflow-hidden here — it would clip the dropdown panel and hide
+     the lower menu items (Rename / Archive / Delete). Thumbnail rounding is
+     handled by overflow-hidden on the thumbnail span itself. --}}
+<div class="group relative rounded-xl border border-slate-200 bg-white shadow-card transition-all hover:shadow-card-hover">
     <div class="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
         <x-dropdown width="w-56" align="right" :label="__('stoman.common.view')">
             <x-slot:trigger>

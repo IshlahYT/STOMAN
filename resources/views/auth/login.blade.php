@@ -3,39 +3,17 @@
 @section('title', __('stoman.auth.sign_in'))
 
 @section('content')
+    {{-- Submit via a normal browser POST to the web /login route: only the web
+         middleware group starts the session and sets the session cookie, which
+         the auth-protected pages depend on. The JSON API (/api/auth/login) is
+         stateless and cannot establish a login for the browser. --}}
     <div x-data="{
         show: false,
         loading: false,
         email: '{{ old('email', 'test@example.com') }}',
         password: 'password',
-        remember: false,
-        error: null,
-        async submit() {
-            this.loading = true;
-            this.error = null;
-            try {
-                const res = await window.stomanApi.login({
-                    email: this.email,
-                    password: this.password,
-                    remember: this.remember,
-                });
-                Alpine.store('ui').toast('success', 'Signed in successfully!');
-                setTimeout(() => {
-                    window.location.href = '{{ route('storage.index') }}';
-                }, 300);
-            } catch (err) {
-                this.error = err.data?.message || err.message || 'Invalid email or password.';
-                Alpine.store('ui').toast('danger', this.error);
-            } finally {
-                this.loading = false;
-            }
-        }
     }">
         <h1 class="text-[28px] font-bold leading-9 text-slate-900">{{ __('stoman.auth.sign_in') }}</h1>
-
-        <template x-if="error">
-            <div class="mt-4 rounded-lg bg-danger-50 p-3 text-sm font-medium text-danger-700" x-text="error"></div>
-        </template>
 
         @if ($errors->any())
             <div class="mt-4 rounded-lg bg-danger-50 p-3 text-sm font-medium text-danger-700">
@@ -43,7 +21,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-4" @submit.prevent="submit()">
+        <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-4" @submit="loading = true">
             @csrf
 
             <x-input label="{{ __('stoman.auth.email') }}" name="email" id="login-email" type="email"

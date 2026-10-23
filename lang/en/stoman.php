@@ -16,7 +16,9 @@ return [
     ],
 
     'nav' => [
+        'main' => 'Main navigation',
         'home' => 'Home',
+        'my_folder' => 'My Folder',
         'storage' => 'My Storage',
         'shared' => 'Shared with Me',
         'recent' => 'Recent',

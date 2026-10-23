@@ -43,7 +43,8 @@ class AuthController extends Controller
             // Generate JWT token as well
             $token = auth('api')->login(Auth::user());
 
-            return redirect()->intended(route('storage.index'))->with('jwt_token', $token);
+            // Land on the Dashboard — regular users cannot access /storage.
+            return redirect()->intended(route('home'))->with('jwt_token', $token);
         }
 
         return back()->withErrors([
@@ -72,7 +73,8 @@ class AuthController extends Controller
         Auth::login($user);
         $token = auth('api')->login($user);
 
-        return redirect()->route('storage.index')->with('jwt_token', $token);
+        // Land on the Dashboard — regular users cannot access /storage.
+        return redirect()->route('home')->with('jwt_token', $token);
     }
 
     /**
@@ -113,8 +115,9 @@ class AuthController extends Controller
 
         $user = auth('api')->user();
 
-        // Also log into web session so page navigation works smoothly
-        Auth::guard('web')->login($user, $request->boolean('remember'));
+        // Stateless JWT endpoint for API clients. Browser logins must use
+        // POST /login (webLogin) — API routes do not run the session
+        // middleware, so they cannot set a session cookie for the browser.
 
         return $this->respondWithToken($token, $user);
     }
@@ -138,7 +141,9 @@ class AuthController extends Controller
         ]);
 
         $token = auth('api')->login($user);
-        Auth::guard('web')->login($user);
+
+        // Stateless JWT endpoint for API clients. Browser registrations must
+        // use POST /register (webRegister) so a real session is established.
 
         return $this->respondWithToken($token, $user, 201);
     }

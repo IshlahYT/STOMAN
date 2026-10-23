@@ -1,10 +1,14 @@
-@props(['variant' => 'card']) {{-- card (sidebar) | avatar (topbar) --}}
+@props(['variant' => 'card', 'user' => null]) {{-- card (sidebar) | avatar (topbar) --}}
 
 @php
-    $user = auth()->user();
-    $name = $user?->name ?? __('stoman.account.guest');
-    $email = $user?->email ?? __('stoman.account.not_signed_in');
-    $initials = strtoupper(mb_substr($name, 0, 1));
+    // Resolve the authenticated user (passed in by the sidebar/topbar, or via
+    // the guards). All app pages require authentication, so the card always
+    // shows the logged-in user's real name and email — never the static
+    // 'Guest' / 'Not signed in' translation strings.
+    $user = $user ?? auth('web')->user() ?? auth('api')->user();
+    $name = $user?->name;
+    $email = $user?->email;
+    $initials = strtoupper(mb_substr((string) $name, 0, 1));
 @endphp
 
 <x-dropdown width="w-56" align="right" class="{{ $variant === 'card' ? 'w-full' : '' }}"
@@ -49,12 +53,14 @@
             </div>
             <p class="truncate text-xs text-slate-600">{{ $email }}</p>
         </div>
+        {{-- Admin-only navigation entries — regular users strictly see only
+             the Home (Dashboard) page, so no other links are offered. --}}
         @if($user && $user->isAdmin())
             <x-menu-item icon="users" href="{{ route('users.index') }}">{{ __('stoman.nav.users') }}</x-menu-item>
+            <x-menu-item icon="user" href="{{ route('settings.index') }}">{{ __('stoman.account.profile') }}</x-menu-item>
+            <x-menu-item icon="gear" href="{{ route('settings.index') }}">{{ __('stoman.account.settings') }}</x-menu-item>
+            <div class="my-1 h-px bg-slate-200"></div>
         @endif
-        <x-menu-item icon="user" href="{{ route('settings.index') }}">{{ __('stoman.account.profile') }}</x-menu-item>
-        <x-menu-item icon="gear" href="{{ route('settings.index') }}">{{ __('stoman.account.settings') }}</x-menu-item>
-        <div class="my-1 h-px bg-slate-200"></div>
         <x-menu-item icon="enter" @click="window.stomanApi.logout()">{{ __('stoman.account.sign_out') }}</x-menu-item>
     </x-slot:panel>
 </x-dropdown>

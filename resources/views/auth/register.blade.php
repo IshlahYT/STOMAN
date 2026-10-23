@@ -3,40 +3,12 @@
 @section('title', __('stoman.auth.sign_up'))
 
 @section('content')
+    {{-- Submit via a normal browser POST to the web /register route so the
+         session is actually established (the JSON API is stateless). --}}
     <div x-data="{
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
         loading: false,
-        error: null,
-        async submit() {
-            this.loading = true;
-            this.error = null;
-            try {
-                const res = await window.stomanApi.register({
-                    name: this.name,
-                    email: this.email,
-                    password: this.password,
-                    password_confirmation: this.password_confirmation,
-                });
-                Alpine.store('ui').toast('success', 'Account created successfully!');
-                setTimeout(() => {
-                    window.location.href = '{{ route('storage.index') }}';
-                }, 300);
-            } catch (err) {
-                this.error = err.data?.message || err.message || 'Registration failed.';
-                Alpine.store('ui').toast('danger', this.error);
-            } finally {
-                this.loading = false;
-            }
-        }
     }">
         <h1 class="text-[28px] font-bold leading-9 text-slate-900">{{ __('stoman.auth.sign_up') }}</h1>
-
-        <template x-if="error">
-            <div class="mt-4 rounded-lg bg-danger-50 p-3 text-sm font-medium text-danger-700" x-text="error"></div>
-        </template>
 
         @if ($errors->any())
             <div class="mt-4 rounded-lg bg-danger-50 p-3 text-sm font-medium text-danger-700">
@@ -44,7 +16,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('register') }}" class="mt-6 space-y-4" @submit.prevent="submit()">
+        <form method="POST" action="{{ route('register') }}" class="mt-6 space-y-4" @submit="loading = true">
             @csrf
 
             <x-input label="{{ __('stoman.auth.name') }}" name="name" id="register-name" required

@@ -12,7 +12,9 @@ use App\Http\Controllers\TrashController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+// The website never bypasses authentication: opening "/" while logged out
+// redirects straight to the Login page.
+Route::get('/', [HomeController::class, 'index'])->middleware('auth')->name('home');
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -21,20 +23,25 @@ Route::get('/register', [AuthController::class, 'showRegister'])->name('register
 Route::post('/register', [AuthController::class, 'webRegister']);
 Route::post('/logout', [AuthController::class, 'webLogout'])->name('logout');
 
-Route::get('/storage', [StorageController::class, 'index'])->name('storage.index');
-Route::get('/storage/{folder}', [StorageController::class, 'folder'])
-    ->where('folder', '[^/]+')
-    ->name('storage.folder');
+// Strict route protection: every application page requires an authenticated
+// session, and regular users (role "User") may only access the Home (Dashboard)
+// — any other URL redirects them back to home.
+Route::middleware(['auth', 'admin:home'])->group(function () {
+    Route::get('/storage', [StorageController::class, 'index'])->name('storage.index');
+    Route::get('/storage/{folder}', [StorageController::class, 'folder'])
+        ->where('folder', '[^/]+')
+        ->name('storage.folder');
 
-Route::get('/shared', [SharedController::class, 'index'])->name('shared.index');
-Route::get('/recent', [RecentController::class, 'index'])->name('recent.index');
-Route::get('/starred', [StarredController::class, 'index'])->name('starred.index');
-Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
-Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
-Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::get('/recent', [RecentController::class, 'index'])->name('recent.index');
+    Route::get('/starred', [StarredController::class, 'index'])->name('starred.index');
+    Route::get('/archive', [ArchiveController::class, 'index'])->name('archive.index');
+    Route::get('/trash', [TrashController::class, 'index'])->name('trash.index');
+    Route::get('/shared', [SharedController::class, 'index'])->name('shared.index');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+});
 
 // User Management (restricted to Admin role only)
-Route::middleware('admin')->group(function () {
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/user-management', [UserController::class, 'index'])->name('users.management');
     Route::get('/users-management', [UserController::class, 'index']);
